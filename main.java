@@ -1,6 +1,8 @@
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class main {
+
     public static void main(String[] args) {
         // 1. Inisialisasi graph
         graph g = new graph();
@@ -53,18 +55,79 @@ public class main {
 
         // 4. Setup Node Awal & Tujuan (Start & Goal)
         node start = g.getNode("S");
-        node goal = g.getNode("G");
+        node goal  = g.getNode("G");
 
         // 5. Panggil Fungsi Pencarian A* Search
         AStarSearch searcher = new AStarSearch();
-        List<node> path = searcher.findPath(g, start, goal);
+        List<node> path      = searcher.findPath(g, start, goal);
 
-        // 6. Tampilkan Hasil (Path + Total Cost)
-        if (path != null) {
-            System.out.println("Path: " + path);
-            System.out.println("Total Cost: " + goal.getGCost());
-        } else {
-            System.out.println("Path tidak ditemukan.");
+        // 6. Tampilkan hasil dengan pemformatan jalur
+        printResult(path, g);
+    }
+
+    // ── Pemformatan Hasil Pencarian ───────────────────────────────────────────
+    private static void printResult(List<node> path, graph g) {
+        System.out.println();
+        System.out.println("  ============================================================");
+        System.out.println("         HASIL PENCARIAN JALUR TERPENDEK  (A* Search)");
+        System.out.println("  ============================================================");
+        System.out.println();
+
+        if (path == null || path.isEmpty()) {
+            System.out.println("  Jalur tidak ditemukan.");
+            System.out.println();
+            return;
         }
+
+        // -- Baris jalur dengan panah --
+        String jalurPanah = path.stream()
+                               .map(node::getName)
+                               .collect(Collectors.joining("  ->  "));
+        System.out.println("  Jalur   :  " + jalurPanah);
+        System.out.println();
+
+        // -- Rincian biaya tiap langkah --
+        System.out.println("  Rincian biaya per langkah:");
+        System.out.println("  +--------+--------+--------+--------+--------+");
+        System.out.println("  | Dari   | Ke     | Bobot  | g(n)   | f(n)   |");
+        System.out.println("  +--------+--------+--------+--------+--------+");
+
+        for (int i = 0; i < path.size(); i++) {
+            node current = path.get(i);
+            if (i == 0) {
+                System.out.printf(
+                    "  | %-6s | %-6s | %-6s | %-6.0f | %-6.0f |\n",
+                    "-", current.getName(), "-",
+                    current.getGCost(), current.getFCost()
+                );
+            } else {
+                node prev        = path.get(i - 1);
+                double edgeWeight = getEdgeWeight(g, prev, current);
+                System.out.printf(
+                    "  | %-6s | %-6s | %-6.0f | %-6.0f | %-6.0f |\n",
+                    prev.getName(), current.getName(),
+                    edgeWeight, current.getGCost(), current.getFCost()
+                );
+            }
+        }
+        System.out.println("  +--------+--------+--------+--------+--------+");
+        System.out.println();
+
+        // -- Ringkasan --
+        double totalCost = path.get(path.size() - 1).getGCost();
+        System.out.println("  Ringkasan:");
+        System.out.println("  Jalur Terpendek : " + jalurPanah);
+        System.out.println("  Total Biaya     : " + totalCost);
+        System.out.println("  Panjang Jalur   : " + (path.size() - 1) + " langkah");
+        System.out.println();
+        System.out.println("  ============================================================");
+        System.out.println();
+    }
+
+    private static double getEdgeWeight(graph g, node from, node to) {
+        for (edge e : g.getNeighbors(from)) {
+            if (e.getTarget().equals(to)) return e.getWeight();
+        }
+        return 0;
     }
 }
